@@ -1,0 +1,16 @@
+# Python virtual environment
+.venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+
+# PlatformIO build artifacts
+.pio/
+.pioenvs/
+.piolibdeps/
