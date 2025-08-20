@@ -65,12 +65,6 @@ ExecStop=/bin/bash -lc 'ip link set can0 down || true'
 [Install]
 WantedBy=multi-user.target
 UNIT
-
-install -m 0644 "$PROJECT_DIR/services/stormpod-can.service" /etc/systemd/system/
-systemctl daemon-reload
-systemctl enable stormpod-can.service
-systemctl start  stormpod-can.service || true
-
 # ── 5) Lightning IRQ systemd unit (BCM 17 version in tools/) ───────────────────
 cat >"$PROJECT_DIR/services/stormpod-irq.service" <<UNIT
 [Unit]
@@ -88,14 +82,16 @@ Restart=on-failure
 [Install]
 WantedBy=multi-user.target
 UNIT
-
+# ── 6) System services install ────────────────────────────────────────────────
+install -m 0644 "$PROJECT_DIR/services/stormpod-can.service" /etc/systemd/system/
 install -m 0644 "$PROJECT_DIR/services/stormpod-irq.service" /etc/systemd/system/
 systemctl daemon-reload
-systemctl enable stormpod-irq.service
+systemctl enable stormpod-can.service stormpod-irq.service
+systemctl start  stormpod-can.service || true
 # Do not auto-start if SPI wiring not attached; comment the next line if needed
 systemctl start  stormpod-irq.service || true
 
-# ── 6) Dev convenience ─────────────────────────────────────────────────────────
+# ── 7) Dev convenience ─────────────────────────────────────────────────────────
 mkdir -p "$PROJECT_DIR/scripts"
 cat >"$PROJECT_DIR/scripts/devenv.sh" <<'ENVH'
 #!/usr/bin/env bash
@@ -106,15 +102,7 @@ echo "StormPOD venv activated."
 ENVH
 chmod +x "$PROJECT_DIR/scripts/devenv.sh"
 chmod +x scripts/display-check.sh
-
-# ── 7) System services install ────────────────────────────────────────────────
-sudo install -m 0644 services/stormpod-can.service /etc/systemd/system/
-sudo install -m 0644 services/stormpod-irq.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable stormpod-can.service stormpod-irq.service
-sudo systemctl start  stormpod-can.service stormpod-irq.service
-
-# ── 9) GUI Autostart Configuraton ──────────────────────────────────────────────
+# ── 8) GUI Autostart Configuraton ──────────────────────────────────────────────
 # Assumes PROJECT_DIR and USER_NAME were set earlier in this script.
 TARGET_USER="${SUDO_USER:-$USER_NAME}"
 TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
@@ -141,5 +129,5 @@ cat >"$AUTOSTART_DIR/autostart" <<'AUTOSTART'
 AUTOSTART
 chown "$TARGET_USER:$TARGET_USER" "$AUTOSTART_DIR/autostart"
 
-# ── 8) Done ────────────────────────────────────────────────────────────────────
+# ── 9) Done ────────────────────────────────────────────────────────────────────
 echo "Setup complete. Reboot recommended."
