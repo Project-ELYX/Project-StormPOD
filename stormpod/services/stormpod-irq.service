@@ -1,0 +1,14 @@
+[Unit]
+Description=StormPOD AS3935 IRQ listener (SPI+IRQ)
+After=network.target
+
+[Service]
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/stormpod
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/pi/stormpod/.venv/bin/python tools/irq_listener.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

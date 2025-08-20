@@ -1,0 +1,12 @@
+[Unit]
+Description=StormPOD bring-up CAN0 @500k
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/bash -lc 'ip link set can0 down 2>/dev/null || true; ip link add dev can0 type can bitrate 500000; ip link set up can0'
+ExecStop=/bin/bash -lc 'ip link set can0 down || true'
+
+[Install]
+WantedBy=multi-user.target

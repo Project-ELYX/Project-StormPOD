@@ -1,0 +1,6 @@
+python-can==4.4.2
+pyserial==3.5
+RPi.GPIO==0.7.1
+spidev==3.6
+adafruit-blinka==8.48.0
+adafruit-circuitpython-bno08x==1.2.10

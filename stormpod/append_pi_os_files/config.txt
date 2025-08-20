@@ -1,0 +1,15 @@
+## APPEND TO /boot/config.txt ##
+
+# Waveshare 7" HDMI (1024x600) — force native timing
+disable_overscan=1
+hdmi_group=2
+hdmi_mode=87
+hdmi_cvt=1024 600 60 6 0 0 0  # 60Hz, reduced blanking
+
+# If you use two HDMI ports on Pi 4, ensure this is on the active port
+# hdmi_force_hotplug=1
+
+
+## APPEND TO ~/.config/lxsession/LXDE-pi/autostart ##
+
+@bash -lc "cd ~/stormpod && ./scripts/devenv.sh && python gui_main.py"

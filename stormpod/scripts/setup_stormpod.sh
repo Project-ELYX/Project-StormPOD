@@ -105,6 +105,41 @@ export PYTHONPATH="$THIS_DIR:$PYTHONPATH"
 echo "StormPOD venv activated."
 ENVH
 chmod +x "$PROJECT_DIR/scripts/devenv.sh"
+chmod +x scripts/display-check.sh
 
-# ── 7) Done ────────────────────────────────────────────────────────────────────
+# ── 7) System services install ────────────────────────────────────────────────
+sudo install -m 0644 services/stormpod-can.service /etc/systemd/system/
+sudo install -m 0644 services/stormpod-irq.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable stormpod-can.service stormpod-irq.service
+sudo systemctl start  stormpod-can.service stormpod-irq.service
+
+# ── 9) GUI Autostart Configuraton ──────────────────────────────────────────────
+# Assumes PROJECT_DIR and USER_NAME were set earlier in this script.
+TARGET_USER="${SUDO_USER:-$USER_NAME}"
+TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
+AUTOSTART_DIR="$TARGET_HOME/.config/lxsession/LXDE-pi"
+
+# Ensure helper script exists (touch alignment); safe to overwrite
+install -d -o "$TARGET_USER" -g "$TARGET_USER" "$PROJECT_DIR/scripts"
+cat >"$PROJECT_DIR/scripts/display-check.sh" <<'DISPLAYFIX'
+#!/usr/bin/env bash
+# Map likely touch HID to panel; identity matrix (adjust if you rotate screen)
+if ! command -v xinput >/dev/null 2>&1; then exit 0; fi
+DEV="$(xinput list --name-only | grep -i -m1 -E 'wave|touch|ft5|goodix|usb touch')"
+if [[ -n "$DEV" ]]; then
+  xinput set-prop "$DEV" 'Coordinate Transformation Matrix' 1 0 0  0 1 0  0 0 1
+fi
+DISPLAYFIX
+chown "$TARGET_USER:$TARGET_USER" "$PROJECT_DIR/scripts/display-check.sh"
+chmod +x "$PROJECT_DIR/scripts/display-check.sh"
+
+# Create LXDE autostart to launch StormPOD GUI at login
+install -d -o "$TARGET_USER" -g "$TARGET_USER" "$AUTOSTART_DIR"
+cat >"$AUTOSTART_DIR/autostart" <<'AUTOSTART'
+@bash -lc "cd ~/stormpod && ./scripts/devenv.sh && ./scripts/display-check.sh && python gui_main.py"
+AUTOSTART
+chown "$TARGET_USER:$TARGET_USER" "$AUTOSTART_DIR/autostart"
+
+# ── 8) Done ────────────────────────────────────────────────────────────────────
 echo "Setup complete. Reboot recommended."
