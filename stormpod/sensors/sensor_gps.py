@@ -35,8 +35,6 @@ class GPSSensor:
                     self.latest["heading_deg"] = heading
                 except:
                     self.latest["heading_deg"] = None
-            else:
-                self.latest["fix"] = False
 
     def read(self):
         for _ in range(10):
