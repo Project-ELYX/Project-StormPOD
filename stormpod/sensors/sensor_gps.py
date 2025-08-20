@@ -15,11 +15,12 @@ class GPSSensor:
     def _parse_latlon(self, raw, direction):
         if not raw or raw == "0":
             return None
-        deg = int(raw[:2])
-        minutes = float(raw[2:])
+        deg_len = len(raw.split(".")[0]) - 2
+        deg = int(raw[:deg_len])
+        minutes = float(raw[deg_len:])
         coord = deg + minutes / 60.0
         return coord if direction in ["N", "E"] else -coord
-    
+
     def _parse_line(self, line):
         if line.startswith("$GPRMC") or line.startswith("$GNRMC"):
             parts = line.split(",")
@@ -29,11 +30,11 @@ class GPSSensor:
                 self.latest["lon"] = self._parse_latlon(parts[5], parts[6])
                 self.latest["speed_kph"] = round(float(parts[7]) * 1.852, 2)
                 self.latest["time_utc"] = parts[1][:6]
-            try:
-                heading = float(parts[8])
-                self.latest["heading_deg"] = heading
-            except:
-                self.latest["heading_deg"] = None
+                try:
+                    heading = float(parts[8])
+                    self.latest["heading_deg"] = heading
+                except:
+                    self.latest["heading_deg"] = None
             else:
                 self.latest["fix"] = False
 
