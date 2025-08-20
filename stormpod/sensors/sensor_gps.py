@@ -29,13 +29,12 @@ class GPSSensor:
                 self.latest["lon"] = self._parse_latlon(parts[5], parts[6])
                 self.latest["speed_kph"] = round(float(parts[7]) * 1.852, 2)
                 self.latest["time_utc"] = parts[1][:6]
-            try:
-                heading = float(parts[8])
-                self.latest["heading_deg"] = heading
-            except:
-                self.latest["heading_deg"] = None
             else:
                 self.latest["fix"] = False
+            try:
+                self.latest["heading_deg"] = float(parts[8])
+            except (ValueError, IndexError):
+                self.latest["heading_deg"] = None
 
     def read(self):
         for _ in range(10):
