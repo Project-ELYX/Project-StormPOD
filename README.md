@@ -1,6 +1,6 @@
 # Project-StormPOD
 
-Coding and functions for the experimental StormPOD hardware.
+Coding and functions for the experimental StormPOD hardware. Except not the tested version, because Windows comitted genocide on my Debian partition.
 
 ---
 
