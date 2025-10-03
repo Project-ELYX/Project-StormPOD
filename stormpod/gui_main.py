@@ -1,5 +1,5 @@
 import tkinter as tk
-from sensor_manager import SensorManager
+from .sensor_manager import SensorManager
 
 UPDATE_INTERVAL_MS = 2000
 

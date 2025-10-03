@@ -13,3 +13,10 @@ try:
         time.sleep(0.1)
 except KeyboardInterrupt:
     sensor.close()
+
+
+CONFIG SETUP:
+
+Keep as3935_driver.py, config_loader.py and the 
+accompanying config.yaml in the same folder to negate
+import errors.

@@ -2,7 +2,7 @@ from sensors.sensor_can import CANReceiver
 from sensors.sensor_as3935 import AS3935Sensor
 from sensors.sensor_gps import GPSSensor
 from sensors.sensor_imu import IMUSensor
-import logger
+from . import logger
 import time
 
 class SensorManager:

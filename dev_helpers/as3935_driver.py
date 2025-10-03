@@ -20,19 +20,24 @@ class AS3935:
     IRQ_DISTURBER = 0x04
     IRQ_LIGHTNING = 0x08
 
-    def __init__(self, spi_bus=0, spi_device=0, irq_pin=17, mode="outdoor"):
-        """
-        Args:
-            spi_bus (int): SPI bus (default 0)
-            spi_device (int): SPI device (0=CE0, 1=CE1)
-            irq_pin (int): BCM pin number for INT pin
-            mode (str): "outdoor" or "indoor"
-        """
+    DEFAULT_CONFIG = {
+        "mode": "outdoor",    # "outdoor" or "indoor"
+        "noise_floor": 2,     # 0–7 (higher = less sensitive to noise)
+        "watchdog": 2,        # 0–15 (lightning detection threshold)
+        "spike_rejection": 2  # 0–15 (filters short impulses)
+    }
+
+    def __init__(self, spi_bus=0, spi_device=0, irq_pin=17, config=None):
         self.irq_pin = irq_pin
+        self.config = dict(self.DEFAULT_CONFIG)
+        if config:
+            self.config.update(config)   # merge user config
+
+        # SPI setup
         self.spi = spidev.SpiDev()
         self.spi.open(spi_bus, spi_device)
         self.spi.max_speed_hz = 500000
-        self.spi.mode = 0b01  # AS3935 requires SPI mode 1
+        self.spi.mode = 0b01
 
         GPIO.setwarnings(False)
         if GPIO.getmode() is None:
@@ -40,52 +45,48 @@ class AS3935:
         GPIO.setup(self.irq_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
         self.latest_event = None
-        self._init_sensor(mode)
+        self._init_sensor()
 
-        # Attach interrupt handler
-        try:
+        # IRQ setup
+        try: 
             GPIO.remove_event_detect(self.irq_pin)
-        except Exception:
+        except: 
             pass
         GPIO.add_event_detect(self.irq_pin, GPIO.FALLING,
                               callback=self._irq_callback, bouncetime=2)
 
-    # ------------------------------
-    # Low-level SPI helpers
-    # ------------------------------
     def _write_register(self, reg, value):
-        cmd = 0x00 | (reg & 0x3F)  # write command
+        cmd = 0x00 | (reg & 0x3F)
         self.spi.xfer2([cmd, value & 0x3F])
 
     def _read_register(self, reg):
-        cmd = 0x40 | (reg & 0x3F)  # read command
+        cmd = 0x40 | (reg & 0x3F)
         return self.spi.xfer2([cmd, 0x00])[1]
 
-    # ------------------------------
-    # Initialization
-    # ------------------------------
-    def _init_sensor(self, mode):
-        # 1. Resonator calibration
+    def _init_sensor(self):
+        # Calibration
         self.spi.xfer2([0x3D, 0x96])
         time.sleep(0.002)
         self.spi.xfer2([0x3D, 0x16])
 
-        # 2. AFE gain (outdoor = less sensitive, indoor = more sensitive)
-        if mode.lower() == "outdoor":
+        # AFE gain
+        if self.config["mode"].lower() == "outdoor":
             self._write_register(0x00, 0x12)
         else:
             self._write_register(0x00, 0x0E)
 
-        # 3. Noise floor, watchdog, spike rejection
-        self._write_register(0x01, 0x24)  # Noise floor + watchdog
-        self._write_register(0x02, 0x24)  # Spike rejection
+        # Noise floor + watchdog (reg 0x01)
+        nf = (self.config["noise_floor"] & 0x07) << 4
+        wd = (self.config["watchdog"] & 0x0F)
+        self._write_register(0x01, nf | wd)
 
-        # 4. Enable interrupts (unmask all)
+        # Spike rejection (reg 0x02)
+        sr = self.config["spike_rejection"] & 0x0F
+        self._write_register(0x02, sr)
+
+        # Enable interrupts
         self._write_register(0x08, 0x00)
 
-    # ------------------------------
-    # IRQ Handling
-    # ------------------------------
     def _irq_callback(self, channel):
         irq_src = self._read_register(0x03) & 0x0F
         timestamp = time.time()
@@ -113,9 +114,6 @@ class AS3935:
         self.latest_event = None
         return evt
 
-    # ------------------------------
-    # Utility
-    # ------------------------------
     def close(self):
         GPIO.cleanup(self.irq_pin)
         self.spi.close()
