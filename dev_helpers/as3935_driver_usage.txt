@@ -1,0 +1,15 @@
+Usage example for the drop-in driver
+
+from as3935_driver import AS3935
+import time
+
+sensor = AS3935(spi_bus=0, spi_device=0, irq_pin=17, mode="outdoor")
+
+try:
+    while True:
+        evt = sensor.read_event()
+        if evt:
+            print("Event:", evt)
+        time.sleep(0.1)
+except KeyboardInterrupt:
+    sensor.close()
